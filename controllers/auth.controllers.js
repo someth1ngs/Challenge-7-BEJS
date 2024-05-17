@@ -77,11 +77,14 @@ module.exports = {
       delete user.password;
       let token = jwt.sign(user, JWT_SECRET);
 
-      res.json({
-        status: true,
-        message: "OK",
-        data: { ...user, token },
-      });
+      if (req.headers["content-type"] === "application/json") {
+        return res.json({
+          status: true,
+          message: "Login successful",
+          data: { ...user, token },
+        });
+      }
+      res.redirect(302, `/api/v1/send-email?token=${token}`);
     } catch (error) {
       next(error);
     }
@@ -94,51 +97,6 @@ module.exports = {
         message: "OK",
         data: req.user,
       });
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  verifyEmail: async (req, res, next) => {
-    try {
-      // check token didalam query
-      const { token } = req.query;
-      // verify token => ambil user_id
-      jwt.verify(token, JWT_SECRET, async (err, data) => {
-        if (err) {
-          // return error
-          res.send("<h1>Failed to Verify</h1>");
-        }
-        // update is_verified = true where id = user_id
-        await prisma.user.update({
-          data: { is_verified: true },
-          where: { id: data.id },
-        });
-      });
-      // render html (success)
-      res.send("<h1>Verify Success</h1>");
-    } catch (error) {
-      next(error);
-    }
-  },
-
-  requestVerifyEmail: async (req, res, next) => {
-    try {
-      let token = jwt.sign({ id: req.user.id }, JWT_SECRET);
-      let url = `http://localhost:3000/api/v1/verify?token=${token}`;
-      console.log(url);
-      let html = await getHTML("verification-code.ejs", {
-        name: "Joko",
-        verification_url: url,
-      });
-
-      await sendMail(req.user.email, "Verification Email", html);
-
-      return res.json({
-        status: true,
-        message: 'Success',
-        data: null
-      })
     } catch (error) {
       next(error);
     }
@@ -171,6 +129,78 @@ module.exports = {
       });
     } catch (error) {
       next(error);
+    }
+  },
+
+  forgetPassword: async (req, res, next) => {
+    try {
+      const email = req.body.email;
+      const findUser = await prisma.user.findUnique({
+        where: { email: email },
+      });
+
+      if (!findUser) {
+        return res.status(404).json({
+          status: false,
+          message: "user not found",
+          data: null,
+        });
+      }
+
+      const token = jwt.sign({ email: findUser.email }, JWT_SECRET);
+      const html = await getHTML("urlResetPassword.ejs", {
+        name: findUser.name,
+        reset_password_url: `${req.protocol}://${req.get(
+          "host"
+        )}/api/v1/reset-password?token=${token}`,
+      });
+      await sendMail(email, "Email Forget Password", html);
+      return res.status(200).json({
+        status: true,
+        message: "Success Send Email Forget Password",
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  resetPassword: async (req, res, next) => {
+    try {
+      const { token } = req.query;
+      const { password } = req.body;
+      console.log(token);
+      if (!password) {
+        return res.status(400).json({
+          status: false,
+          message: "Password Required!",
+          data: null,
+        });
+      }
+      let encryptedPassword = await bcrypt.hash(password, 10);
+
+      jwt.verify(token, JWT_SECRET, async (err, decoded) => {
+        if (err) {
+          return res.status(403).json({
+            status: false,
+            message: "Invalid or expired token!",
+            data: null,
+          });
+        }
+  
+        const updateUser = await prisma.user.update({
+          where: { email: decoded.email },
+          data: { password: encryptedPassword },
+          select: { id: true, name: true, email: true } 
+        });
+  
+        res.status(200).json({
+          status: true,
+          message: "Your password has been updated successfully!",
+          data: updateUser,
+        });
+      });
+    } catch (error) {
+      next(error)
     }
   },
 };

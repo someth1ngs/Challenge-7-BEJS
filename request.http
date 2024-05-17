@@ -21,6 +21,8 @@ Content-Type: application/json
 GET http://localhost:3000/api/v1/whoami
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MSwibmFtZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkBnbWFpbC5jb20iLCJpYXQiOjE3MTU5MzIxODF9.JHSrLOYZHvgWQYjH9nbWondYlQXflvLJuLTcG43MU7M
 
-
 ### GET - menampilkan daftar users.
 GET http://localhost:3000/api/v1/users?search=
+
+### GET - menampilkan daftar users.
+GET http://localhost:3000/api/v1/console

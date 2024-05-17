@@ -6,7 +6,11 @@ const jwt = require("jsonwebtoken");
 
 let restrict = (req, res, next) => {
   let { authorization } = req.headers;
-  if (!authorization || !authorization.split(" ")[1]) {
+  if (authorization && authorization.split(" ")[1]) {
+    token = authorization.split(" ")[1];
+  } else if (req.query.token) {
+    token = req.query.token;
+  } else {
     res.status(401).json({
       status: false,
       message: "token not provided",
@@ -14,7 +18,7 @@ let restrict = (req, res, next) => {
     });
   }
 
-  let token = authorization.split(" ")[1];
+  // let token = authorization.split(" ")[1];
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err) {
       res.status(401).json({
@@ -29,7 +33,7 @@ let restrict = (req, res, next) => {
   });
 };
 
-router.use("/register", async (req, res, next) => {
+router.get("/register", async (req, res, next) => {
   try {
     res.render("register.ejs");
   } catch (error) {
@@ -37,7 +41,7 @@ router.use("/register", async (req, res, next) => {
   }
 });
 
-router.use("/login", async (req, res, next) => {
+router.get("/login", async (req, res, next) => {
   try {
     res.render("login.ejs");
   } catch (error) {
@@ -45,7 +49,7 @@ router.use("/login", async (req, res, next) => {
   }
 });
 
-router.use("/forget-password", async (req, res, next) => {
+router.get("/forget-password", async (req, res, next) => {
   try {
     res.render("forgetPassword.ejs");
   } catch (error) {
@@ -53,9 +57,9 @@ router.use("/forget-password", async (req, res, next) => {
   }
 });
 
-router.use("/console", restrict, async (req, res, next) => {
+router.get("/send-email", restrict, async (req, res, next) => {
   try {
-    res.render("console.ejs");
+    res.render("sendEmail.ejs");
   } catch (error) {
     next(error);
   }
@@ -63,14 +67,15 @@ router.use("/console", restrict, async (req, res, next) => {
 
 router.post("/auth/register", auth.register);
 router.post("/auth/login", auth.login);
-router.get("/whoami", restrict, auth.whoami);
-router.get("/verify", auth.verifyEmail);
-router.get("/request-verify", restrict, auth.requestVerifyEmail);
-// router.get("/reset-password", (req, res) => {
-//   let { token } = req.query;
-//   console.log(token);
-//   res.render("reset-password", { token });
-// });
+router.get("/auth/whoami", restrict, auth.whoami);
+
+router.post("/forget-password", auth.forgetPassword);
+// router.post("/reset-password", auth.resetPassword)
+router.get("/reset-password", (req, res) => {
+  let { token } = req.query;
+  res.render("resetPassword", { token : token });
+});
+router.post("/reset-password", auth.resetPassword);
 
 router.get("/users", auth.index);
 
