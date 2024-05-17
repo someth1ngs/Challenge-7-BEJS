@@ -149,7 +149,7 @@ module.exports = {
       let { search } = req.query;
 
       let users = await prisma.user.findMany({
-        where: { first_name: { contains: search } },
+        where: { name: { contains: search } },
         orderBy: { id: "asc" },
       });
 

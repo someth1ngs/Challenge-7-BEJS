@@ -29,9 +29,40 @@ let restrict = (req, res, next) => {
   });
 };
 
-router.post("/register", auth.register);
-router.post("/login", auth.login);
+router.use("/register", async (req, res, next) => {
+  try {
+    res.render("register.ejs");
+  } catch (error) {
+    next(error);
+  }
+});
 
+router.use("/login", async (req, res, next) => {
+  try {
+    res.render("login.ejs");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.use("/forget-password", async (req, res, next) => {
+  try {
+    res.render("forgetPassword.ejs");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.use("/console", restrict, async (req, res, next) => {
+  try {
+    res.render("console.ejs");
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.post("/auth/register", auth.register);
+router.post("/auth/login", auth.login);
 router.get("/whoami", restrict, auth.whoami);
 router.get("/verify", auth.verifyEmail);
 router.get("/request-verify", restrict, auth.requestVerifyEmail);
@@ -41,6 +72,6 @@ router.get("/request-verify", restrict, auth.requestVerifyEmail);
 //   res.render("reset-password", { token });
 // });
 
-router.get("/users", auth.index)
+router.get("/users", auth.index);
 
 module.exports = router;
