@@ -3,7 +3,7 @@ const express = require("express");
 const logger = require("morgan");
 const PORT = process.env.PORT || 3000;
 const Sentry = require("./libs/sentry");
-// const router = require("./routes/v1");
+const router = require("./routes/v1");
 const app = express();
 
 // The request handler must be the first middleware on the app
@@ -14,7 +14,7 @@ app.use(Sentry.Handlers.tracingHandler());
 
 app.use(logger("dev"));
 app.use(express.json());
-// app.use(router);
+app.use('/api/v1', router);
 
 app.get("/", (req, res) =>
   res.json({
