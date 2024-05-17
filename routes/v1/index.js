@@ -57,9 +57,9 @@ router.get("/forget-password", async (req, res, next) => {
   }
 });
 
-router.get("/send-email", restrict, async (req, res, next) => {
+router.get("/console", restrict, async (req, res, next) => {
   try {
-    res.render("sendEmail.ejs");
+    res.render("console.ejs");
   } catch (error) {
     next(error);
   }
@@ -78,5 +78,6 @@ router.get("/reset-password", (req, res) => {
 router.post("/reset-password", auth.resetPassword);
 
 router.get("/users", auth.index);
+router.get("/users/:id/notification", auth.pageNotification);
 
 module.exports = router;

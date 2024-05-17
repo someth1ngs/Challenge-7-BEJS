@@ -4,6 +4,8 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 const { JWT_SECRET } = process.env;
 const { getHTML, sendMail } = require("../libs/nodemailer");
+const { formattedDate } = require("../libs/formattedDate");
+const userSockets = {};
 
 module.exports = {
   register: async (req, res, next) => {
@@ -34,6 +36,17 @@ module.exports = {
       };
       let user = await prisma.user.create({ data: userData });
       delete user.password;
+
+      const notification = await prisma.notification.create({
+        data: {
+          title: `Registrasi Berhasil`,
+          message: `Selamat datang, ${user.name}`,
+          createdDate: formattedDate(new Date()),
+          user: { connect: { id: user.id } },
+        },
+      });
+
+      global.io.emit(`user-${user.id}`, notification);
 
       return res.status(201).json({
         status: true,
@@ -77,14 +90,27 @@ module.exports = {
       delete user.password;
       let token = jwt.sign(user, JWT_SECRET);
 
+      // Tambahkan operasi pembuatan notifikasi di sini
+      const notification = await prisma.notification.create({
+        data: {
+          title: "Login Berhasil",
+          message: `${user.name} berhasil login`,
+          createdDate: formattedDate(new Date()),
+          user: { connect: { id: user.id } },
+        },
+      });
+
+      global.io.emit(`user-${user.id}`, notification);
+
       if (req.headers["content-type"] === "application/json") {
         return res.json({
           status: true,
-          message: "Login successful",
+          message: "Login berhasil",
           data: { ...user, token },
         });
       }
-      res.redirect(302, `/api/v1/send-email?token=${token}`);
+
+      res.redirect(302, `/api/v1/console?token=${token}`);
     } catch (error) {
       next(error);
     }
@@ -157,7 +183,7 @@ module.exports = {
       await sendMail(email, "Email Forget Password", html);
       return res.status(200).json({
         status: true,
-        message: "Success Send Email Forget Password",
+        message: "Cek email kamu",
       });
     } catch (error) {
       next(error);
@@ -186,21 +212,50 @@ module.exports = {
             data: null,
           });
         }
-  
+
         const updateUser = await prisma.user.update({
           where: { email: decoded.email },
           data: { password: encryptedPassword },
-          select: { id: true, name: true, email: true } 
+          select: { id: true, name: true, email: true },
         });
-  
+
+        const notification = await prisma.notification.create({
+          data: {
+            title: "Reset Password!",
+            message: "Selamat reset password berhasil!",
+            createdDate: formattedDate(new Date()),
+            user: { connect: { id: updateUser.id } },
+          },
+        });
+
+        global.io.emit(`user-${updateUser.id}`, notification);
+
         res.status(200).json({
           status: true,
-          message: "Your password has been updated successfully!",
+          message: "Password berhasil diganti!",
           data: updateUser,
         });
       });
     } catch (error) {
-      next(error)
+      next(error);
+    }
+  },
+
+  pageNotification: async (req, res, next) => {
+    try {
+      const userId = Number(req.params.id);
+
+      // Ambil notifikasi hanya untuk pengguna yang terkait
+      const notifications = await prisma.notification.findMany({
+        where: { user_id: userId },
+      });
+
+      res.render("notification.ejs", {
+        userID: userId,
+        notifications: notifications,
+      });
+    } catch (error) {
+      next(error);
     }
   },
 };

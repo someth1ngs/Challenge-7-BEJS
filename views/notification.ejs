@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Notifications</title>
+    <style>
+      body {
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+        background-color: #f4f4f4;
+        color: #333;
+      }
+      header {
+        background-color: #333;
+        color: #fff;
+        padding: 20px 0;
+        text-align: center;
+        margin-bottom: 20px;
+        font-size: 24px;
+      }
+      main {
+        margin: 0 auto;
+        max-width: 800px;
+      }
+      h2 {
+        margin-bottom: 20px;
+        font-size: 22px;
+        color: #444;
+      }
+      ul {
+        padding: 0;
+      }
+      li {
+        background-color: #fff;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        padding: 20px;
+        margin-bottom: 20px;
+        transition: all 0.3s ease;
+      }
+      li:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 12px rgba(0, 0, 0, 0.1);
+      }
+      li b {
+        color: #333;
+        font-size: 20px;
+        margin-bottom: 10px;
+        display: block;
+      }
+      li p {
+        color: #666;
+        margin: 0;
+        font-size: 16px;
+        line-height: 1.6;
+      }
+      li span {
+        color: #999;
+        font-size: 14px;
+        display: block;
+        margin-top: 10px;
+      }
+      footer {
+        text-align: center;
+        color: #777;
+        margin-top: 40px;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <header>Notifications</header>
+    <main>
+      <h2>Notification List</h2>
+      <ul id="notification-list">
+        <!-- Looping untuk menampilkan notifikasi -->
+        <% notifications.forEach(notification => { %>
+        <li>
+          <b><%= notification.title %></b>
+          <p><%= notification.message %></p>
+          <span><%= notification.createdDate %></span>
+        </li>
+        <% }) %>
+      </ul>
+    </main>
+    <footer>&copy; 2024 AnggaDev. All rights reserved.</footer>
+    <script src="/socket.io/socket.io.js"></script>
+    <script>
+      const socket = io();
+      const notifications = document.getElementById("notification-list");
+      const userId = `<%= userID %>`;
+
+      socket.on(`user-${userId}`, (notification) => {
+        const item = document.createElement("li");
+        item.innerHTML = `
+                <b>${notification.title}</b>
+                <p>${notification.message}</p>
+                <span>${notification.createdDate}</span>
+            `;
+        notifications.appendChild(item);
+      });
+    </script>
+  </body>
+</html>
